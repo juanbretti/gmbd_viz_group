@@ -1,0 +1,30 @@
+12:02 AM 11/23/2020
+
+UPLOAD ASSIGNMENT: ASSIGNMENT #2: EXPLORATORY DATA ANALYSIS WITH GGPLOT2
+ 
+   ASSIGNMENT INFORMATION
+Due Date
+Sunday, December 13, 2020
+11:59 PM
+Points Possible
+100
+Summary:
+Students are expected to act as inquisitive data scientists, looking for stories and insights in the data through the different data visualization techniques learned so far. They can also apply any data transformation and analyses processes, but the end goal is to get to answers through graphs & charts. This is a group assignment.
+
+Assignment:
+Before opening their APIs to the public, CitiBank's Chief Digital Officer is keen in exploring new revenue streams to monetize the larges amount of data they've been historically collecting. He knows other financial institutions are doing business with their data, but he still needs to define specific use cases in which his credit card transaction data can add real value. As Senior Data Scientists, the CDO assigns you with the key task of exploring in depth the data stored in your data centers and make a solid assessment of the real value provided by it. You will present this business case in Citibank's annual convention.
+
+The dataset provided contains more than 10,000 credit card transactions performed by tourists in the city of Madrid during a month. CitiBank's DBA has already cleaned the file and uploaded it to the Campus Online, so you can solely focus on analyzing the different consumption patterns from tourists. The goal is to discover different insights from the data through data visualization (with GGPlot2) and then transform them into potential business outcomes. Is there a particular time in which tourists are buying? Which nationality has the highest average ticket and why?Is there any relationship between day of the week and consumption ?Do high end fashion retailers need to focus more on attracting Australian visitors than on Chinese? Why? (this questions are examples, not mandatory).
+
+“There are no routine statistical questions, only questionable statistical routines.” — Sir David Cox.
+
+Your results will include:
+- Business case: Clearly explain your findings and why your data, and therefore its insights, can be relevant to a potential client. How can the information extracted from the dataset improve a specific business? Are there different potential audiences or do you want to focus on one? The more precise you are, the better. 
+- Ggplot 2 Visualizations: 5-8 visualizations that you've used to get to the insights explained above. Its script is needed. Design is secondary.
+You are CitiBank's Data Unit and are expected to act as a team in order to find the insights that are needed. Challenge your peers and make more and more questions among yourselves, until the value of your data begins to surface. Some business acumen is expected and required from your business case. Aside from the data exploration and visualizations, it's key to understand what your findings are useful for. 
+
+Submission: The submission should be in PDF format with a maximum of 6 pages. This is a group assignment and you must work in the groups established for the 2nd Term. 
+Dataset needed: madrid_transactions.csv (attached).
+Deadline: Sunday December 13th (midnight). Late submissions will be penalized. 
+
+madrid_transactions.csv
