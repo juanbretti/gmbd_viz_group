@@ -410,9 +410,16 @@ ggplot(df) +
 ```
 
 
-
-
-
-
+```{r}
+df_mod <- df %>% 
+  mutate(day_hour_=floor_date(tx_date_proc, "hour"),
+         minute_=minute(tx_date_proc))
+  
+ggplot(df_mod) +
+  geom_hex(aes(x=minute_, y=log10(amount))) +
+  facet_wrap(vars(factor(day_hour_))) +
+  scale_fill_viridis_c() +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+```
 
 
