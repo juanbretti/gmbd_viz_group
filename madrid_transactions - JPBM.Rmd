@@ -282,9 +282,10 @@ data(wrld_simpl)
 world_ggmap <- fortify(wrld_simpl, region = "ISO2")
 
 df_grouped <- df %>% 
-  group_by(`customer_country`) %>% 
-  summarise(n=n()) %>% 
-  mutate(row=row_number())
+  group_by(`customer_country`, `category`) %>% 
+  summarise(n_=n(),
+            amount_=sum(amount)) %>% 
+  mutate(row_=row_number())
 
 df_top_country <- df %>% 
   group_by(`customer_country`) %>% 
@@ -298,14 +299,22 @@ world_ggmap_mean <- world_ggmap %>%
   summarise(long = mean(long), lat = mean(lat)) %>% 
   filter(id %in% df_top_country)
 
-ggplot(df_grouped) +
-  geom_map(aes(map_id = customer_country, fill = row), map = world_ggmap) +
+gg <- ggplot(df_grouped) +
+  geom_map(aes(map_id = customer_country, fill = n_), map = world_ggmap) +
   expand_limits(x = world_ggmap$long, y = world_ggmap$lat) +
   geom_text(aes(x=long, y=lat, label = id), data=world_ggmap_mean, size = 3, hjust = 0.5, color='red')+
   scale_fill_viridis_c()+
-  theme_void()+
+  theme_void() +
   theme(legend.position = "none")
+
+gg
 ```
+
+```{r}
+gg +
+  facet_wrap(vars(category))
+```
+
 
 ```{r}
 
@@ -370,6 +379,24 @@ gg <- ggplot(df_mod) +
 
 gg
 ```
+
+```{r}
+# https://public.tableau.com/en-us/gallery/evolution-global-temperature
+df_mod <- df %>% 
+  mutate(day_hour_=floor_date(tx_date_proc, "hour"),
+         minute_=minute(tx_date_proc)) %>% 
+  group_by(day_hour_, minute_, category) %>% 
+  summarise(n_=n()) 
+  
+gg <- ggplot(df_mod) +
+  geom_raster(aes(x=day_hour_, y=minute_, fill = n_), hjust=0.5, vjust=0.5, interpolate=FALSE) +
+  facet_wrap(vars(category)) +
+  scale_fill_viridis_c() +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+
+gg
+```
+
 
 ## 3D
 
