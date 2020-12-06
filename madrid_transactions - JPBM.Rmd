@@ -25,8 +25,8 @@ library(ggpmisc)
 library(lubridate)
 library(ggridges)
 
-dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
-setwd(dir)
+# dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+# setwd(dir)
 ```
 
 ## Load data
@@ -65,6 +65,11 @@ chart.Correlation(my_data, histogram=TRUE, pch=19)
 ```
 
 ```{r}
+theme_set(theme_ridges())
+```
+
+
+```{r}
 # Data pre processing
 df_top <- df %>% 
   group_by(`customer_country`) %>% 
@@ -95,7 +100,8 @@ ggplot(df_grouped, aes(x=amount, color=top_customer_country, fill=top_customer_c
 ```{r}
 ggplot(df_grouped, aes(x=amount, y=top_customer_country, fill=top_customer_country)) +
   geom_boxplot() +
-  scale_x_log10() 
+  scale_x_log10() +
+  theme(legend.position = "none")
 ```
 
 ```{r}
@@ -353,13 +359,20 @@ ggplot(df_grouped, aes(x=log10(amount))) +
 
 
 ```{r}
-df_grouped <- df %>% 
-  mutate(day_hour_=floor_date(tx_date_proc, "hour"))
+library(scales)
 
-ggplot(df_grouped, aes(x=day_hour_)) +
+df_grouped <- df %>% 
+  mutate(day_hour_=floor_date(tx_date_proc, "hour"),
+         hour_=make_datetime(
+                hour = hour(tx_date_proc),
+                min = minute(tx_date_proc),
+                sec = second(tx_date_proc)))
+
+ggplot(df_grouped, aes(x=hour_, color=weekday)) +
   facet_wrap(vars(category)) +
   geom_density(alpha=0.1) +
-  theme(axis.text.x=element_text(angle=90, hjust=1))
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  coord_cartesian(ylim = c(0, 0.00005))
 ```
 
 
@@ -412,8 +425,6 @@ library(rayshader)
 
 ```{r}
 # http://www.sthda.com/english/articles/32-r-graphics-essentials/133-plot-one-variable-frequency-graph-density-distribution-and-more/
-theme_set(theme_ridges())
-
 df_mod <- df %>% 
   mutate(day_hour_=floor_date(tx_date_proc, "hour"),
          minute_=factor(round(minute(tx_date_proc), -1)))
@@ -428,8 +439,6 @@ ggplot(df_mod) +
 ```{r}
 # http://www.sthda.com/english/articles/32-r-graphics-essentials/133-plot-one-variable-frequency-graph-density-distribution-and-more/
 # https://stackoverflow.com/questions/25985159/r-how-to-3d-density-plot-with-gplot-and-geom-density
-theme_set(theme_ridges())
-
 ggplot(df) +
   geom_density_ridges_gradient(aes(x=tx_date_proc, y=category, fill=..x..), scale = 3, size = 0.3) +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
