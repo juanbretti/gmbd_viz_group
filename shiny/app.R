@@ -9,8 +9,13 @@ library(ggridges)
 library(scales)
 # library(PerformanceAnalytics)
 # Maps
-library(maptools)
 library(maps)
+
+# https://stackoverflow.com/questions/30790036/error-istruegpclibpermitstatus-is-not-true
+library(rgdal)
+library(maptools)
+if (!require(gpclib)) install.packages("gpclib", type="source")
+gpclibPermit()
 
 # Environment
 df <- read_delim(file="madrid_transactions.csv", delim = ',', locale = locale(decimal_mark = '.'))
