@@ -1,0 +1,87 @@
+---
+title: "ASSIGNMENT #2: EXPLORATORY DATA ANALYSIS WITH GGPLOT2"
+author: "Group F"
+date: "DEC/13/2020"
+output:
+  html_document:
+  code_folding: show
+toc: true
+toc_float:
+  collapsed: false
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+
+library(skimr)
+library(ggpmisc)
+library(lubridate)
+library(ggridges)
+library(dplyr)
+library(forcats)
+library(ggiraph)
+library(tidyr)
+library(RColorBrewer)
+
+
+```
+
+## Load data
+
+Read the raw data from the CSV file.
+
+```{r}
+
+df <- read.csv('source/madrid_transactions.csv')
+df <- subset(df, select = -c(X) )
+```
+
+```{r  fig.width = 15,fig.height= 12}
+density_df <- df[complete.cases(df), ] %>%  group_by(hour,category) %>%  summarise_if(is.numeric, sum, na.rm = TRUE)
+
+density_df <- subset(density_df , select = -c(hour) )
+
+
+density_df %>%
+  mutate(category = fct_reorder(category, amount)) %>%
+  ggplot( aes(y=category, x=amount,  fill=category)) +
+    geom_density_ridges(alpha=10, bins=40) +
+    theme_ridges() + labs(title = "Categories Spendings",
+           subtitle = "Aggregated by Hours",
+           y = "Category",
+           x = "Total Spending") +theme(legend.position = "none")
+```
+
+```{r}
+max_min_df <- subset(df, select = c(category,amount) )
+
+
+max_min_df <- max_min_df %>%
+  group_by(category) %>%
+  summarise(max = max(amount), min= min(amount))
+
+
+p1 <- max_min_df %>% arrange(max) %>% mutate(category = factor(category, levels = category)) %>% 
+    ggplot(aes(x = category)) + geom_segment(aes(x = category, xend = category, y = min, 
+    yend = max), color = "#c5c5c5", size = 2) + geom_point_interactive(aes(y = max), 
+    color = "#1b7fbd", size = 2) + geom_point_interactive(aes(y = min), color = "#ee4540", 
+    size = 2) + coord_flip() + theme(axis.title.x = element_blank())
+
+p1
+```
+
+```{r fig.width = 20,fig.height= 20}
+heatmap_df <- subset(df , select = c(hour,amount,category) ) %>%  group_by(hour,category) %>% summarise_if(is.numeric, sum, na.rm = TRUE) %>% spread(key="category", value="amount")
+
+heatmap_df <- heatmap_df %>% replace(is.na(.), 0)
+
+heatmap_df$hour <- NULL
+
+heatmap(as.matrix(heatmap_df[complete.cases(as.matrix(heatmap_df)), ]),Colv = NA, Rowv = NA,labRow =rownames(heatmap_df),  scale="row",col= colorRampPalette(brewer.pal(8, "Blues"))(25),cexRow=2)
+```
+
