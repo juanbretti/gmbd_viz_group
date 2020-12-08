@@ -76,12 +76,19 @@ p1
 ```
 
 ```{r fig.width = 20,fig.height= 20}
-heatmap_df <- subset(df , select = c(hour,amount,category) ) %>%  group_by(hour,category) %>% summarise_if(is.numeric, sum, na.rm = TRUE) %>% spread(key="category", value="amount")
+heatmap_df <- subset(df , select = c(hour,amount,category) ) %>%  
+  group_by(hour,category) %>% 
+  summarise_if(is.numeric, sum, na.rm = TRUE) %>% 
+  spread(key="category", value="amount")
 
-heatmap_df <- heatmap_df %>% replace(is.na(.), 0)
+heatmap_df <- heatmap_df %>% 
+  replace(is.na(.), 0)
 
 heatmap_df$hour <- NULL
 
-heatmap(as.matrix(heatmap_df[complete.cases(as.matrix(heatmap_df)), ]),Colv = NA, Rowv = NA,labRow =rownames(heatmap_df),  scale="row",col= colorRampPalette(brewer.pal(8, "Blues"))(25),cexRow=2)
+heatmap(as.matrix(heatmap_df[complete.cases(as.matrix(heatmap_df)), ]),Colv = NA, Rowv = NA,labRow =rownames(heatmap_df),  
+        scale="row",
+        col= colorRampPalette(brewer.pal(8, "Blues"))(25),
+        cexRow=1)
 ```
 

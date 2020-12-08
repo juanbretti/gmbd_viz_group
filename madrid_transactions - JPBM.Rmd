@@ -375,6 +375,72 @@ ggplot(df_grouped, aes(x=hour_, color=weekday)) +
   coord_cartesian(ylim = c(0, 0.00005))
 ```
 
+```{r}
+df_grouped <- df %>% 
+  mutate(day_hour_=floor_date(tx_date_proc, "hour"),
+         hour_=make_datetime(
+                hour = hour(tx_date_proc),
+                min = minute(tx_date_proc),
+                sec = second(tx_date_proc)))
+
+ggplot(df_grouped, aes(x=hour, color=weekday)) +
+  facet_wrap(vars(category)) +
+  geom_density(alpha=0.1) +
+  theme(axis.text.x=element_text(angle=90, hjust=1), axis.text.y = element_blank())
+```
+
+```{r}
+df_grouped <- df %>% 
+  mutate(day_hour_=floor_date(tx_date_proc, "hour"),
+         hour_=make_datetime(
+                hour = hour(tx_date_proc),
+                min = minute(tx_date_proc),
+                sec = second(tx_date_proc))) %>% 
+  group_by(category, hour) %>% 
+  summarise(n_=n(),
+            sum_=sum(amount),
+            mean_=mean(amount))
+
+ggplot(df_grouped, aes(x=hour, y=category, fill=sum_)) +
+  geom_tile(alpha=0.8) +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  scale_fill_viridis_c(name = "Spenditure") +
+  labs(title = "Categories spendings",
+       subtitle = "Total spenditure",
+       y = "Category",
+       x = "Hour of the day")
+```
+
+
+```{r}
+
+df_sort <- df %>% 
+  group_by(category) %>% 
+  summarise(n_=n(),
+            sum_=sum(amount),
+            mean_=mean(amount)) %>% 
+  arrange((sum_)) %>% 
+  .[['category']]
+
+df_grouped <- df %>% 
+  group_by(category, hour) %>% 
+  summarise(n_=n(),
+            sum_=sum(amount),
+            mean_=mean(amount)) %>% 
+  mutate(category = factor(category, df_sort))
+  # mutate(category=fct_reorder(.f=`category`, .x=sum_, .desc=F))
+
+ggplot(df_grouped, aes(y=category, x=sum_, fill=category)) +
+  geom_density_ridges(alpha=0.7) +
+  labs(title = "Categories spendings",
+         subtitle = "Aggregated by Hours",
+         y = "Category",
+         x = "Total Spending") +
+  theme(legend.position = "none") +
+  scale_fill_viridis_d()
+```
+
+
 
 ```{r}
 # https://public.tableau.com/en-us/gallery/evolution-global-temperature
