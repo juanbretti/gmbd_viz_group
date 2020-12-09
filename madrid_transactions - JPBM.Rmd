@@ -198,7 +198,38 @@ ggplot(df_grouped, aes(x=amount, color=top_country, fill=top_country)) +
 ```
 
 
+```{r}
+df_top_category <- df %>% 
+  group_by(`category`) %>% 
+  summarise(Total=sum(`amount`)) %>% 
+  top_n(5, Total) %>%
+  arrange(desc(Total))
 
+df_top_country <- df %>% 
+  group_by(`customer_country`) %>% 
+  summarise(Total=sum(`amount`)) %>% 
+  top_n(5, Total) %>%
+  arrange(desc(Total))
+
+df_grouped <- df %>% 
+  mutate(top_category=ifelse(`category` %in% df_top_category[['category']], `category`, 'Other')) %>% 
+  mutate(top_category=factor(top_category, levels=c(df_top_category[['category']], 'Other'))) %>% 
+  mutate(top_country=ifelse(`customer_country` %in% df_top_country[['customer_country']], `customer_country`, 'Other')) %>% 
+  mutate(top_country=factor(top_country, levels=c(df_top_country[['customer_country']], 'Other')))
+
+
+df_grouped <- df_grouped %>% 
+  group_by(top_category, top_country) %>% 
+  summarise(sum_=sum(amount)/1e3)
+
+gg <- ggplot(df_grouped, aes(x = top_category, y = sum_, fill = top_country, label = paste(top_country, "\n", round(sum_, 0)))) +  # Create stacked bar chart
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5)) +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  coord_flip()
+
+gg     
+```
 
 
 ```{r}
