@@ -24,6 +24,7 @@ library(skimr)
 library(ggpmisc)
 library(lubridate)
 library(ggridges)
+library(ggalluvial)
 
 # dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
 # setwd(dir)
@@ -129,6 +130,30 @@ ggplot(df_grouped, aes(x=amount, color=top_, fill=top_)) +
   labs(title="Amount per category",x="Amount", y = "Density") +
   scale_x_log10()
 ```
+
+
+
+```{r}
+# https://rkabacoff.github.io/datavis/Other.html
+library(ggplot2)
+library(ggalluvial)
+
+df_grouped <- df_grouped %>% 
+  group_by(top_, daytime, weekday) %>% 
+  summarise(amount=sum(amount))
+            
+ggplot(df_grouped, aes(axis1 = top_,
+           axis2 = daytime,
+           y = amount)) +
+  geom_alluvium(aes(fill = weekday)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  scale_x_discrete(limits = c("Category", "Daytime"), expand = c(.1, .1)) +
+  labs(title = "Titanic data", subtitle = "stratified by class, sex, and survival", y = "Frequency") +
+  theme_minimal()
+```
+
+
 
 
 ```{r}

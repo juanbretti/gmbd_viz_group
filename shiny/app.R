@@ -7,7 +7,7 @@ library(lubridate)
 library(ggridges)
 library(scales)
 library(ggrepel)
-# library(PerformanceAnalytics)
+library(ggalluvial)
 # Maps
 library(maps)
 # https://stackoverflow.com/questions/30790036/error-istruegpclibpermitstatus-is-not-true
@@ -22,12 +22,6 @@ theme_set(theme_ridges())
 
 # Skim
 text_skim <- skim(df)
-
-# # Correlation plot
-# df_mod <- df %>%
-#     mutate_if(is.character, function(x) as.numeric(as.factor(x))) %>%
-#     select(-tx_date_proc)
-# chart_correlation1 <- chart.Correlation(df_mod, histogram=TRUE, pch=19)
 
 df_mod_class_top <- function(df, class, group, top, other) {
     df_mod <- df %>% 
@@ -45,6 +39,12 @@ df_mod_class_top <- function(df, class, group, top, other) {
         summarise(Total=sum(`amount`)) %>% 
         top_n(top, Total) %>%
         arrange(desc(Total))
+    
+    daytime_sorted <- df_mod %>% 
+        group_by(`daytime`) %>% 
+        summarise(hour=mean(`hour`)) %>% 
+        arrange((hour)) %>% 
+        .[['daytime']]
 
     df_grouped <- df_mod %>% 
         mutate(top_class=ifelse(`class` %in% df_top_class[['class']], `class`, 'Other')) %>% 
@@ -52,7 +52,8 @@ df_mod_class_top <- function(df, class, group, top, other) {
         mutate(top_class=fct_rev(top_class)) %>% 
         mutate(top_group=ifelse(`group` %in% df_top_group[['group']], `group`, 'Other')) %>% 
         mutate(top_group=factor(top_group, levels=c(df_top_group[['group']], 'Other'))) %>% 
-        mutate(top_group=fct_rev(top_group))
+        mutate(top_group=fct_rev(top_group)) %>% 
+        mutate(daytime=factor(daytime, levels=daytime_sorted))
     
     if (is.null(other)) {
         df_grouped <- df_grouped %>%
@@ -121,7 +122,6 @@ plot_distribution2 <- function(df, class) {
     
     return(gg)
 }
-
 
 plot_distribution_country_category <- function(df, class, group) {
     mu <- df %>% 
@@ -243,6 +243,29 @@ plot_category_country <- function(df, class, group) {
     return(gg)  
 }
 
+plot_sankey <- function(df, class) {
+    # https://rkabacoff.github.io/datavis/Other.html
+    
+    df_grouped <- df %>% 
+        group_by(top_class, daytime) %>% 
+        summarise(amount_=sum(amount))
+    
+    dim(df_grouped)
+    
+    gg <- ggplot(df_grouped, aes(axis1 = top_class, axis3 = daytime, y = amount_)) +
+        geom_alluvium(aes(fill=top_class)) +
+        geom_stratum() +
+        geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+        scale_x_discrete(limits = c(class, 'Daytime'), expand = c(.1, .1)) +
+        labs(title = "Flow and allocation", subtitle = paste0('Stratified by ', class, ' and daytime'), y = "Proportional to total amount") +
+        theme_minimal() +
+        theme(legend.position = "none",
+              axis.text.y=element_blank()) +
+        scale_fill_viridis_d()
+    
+    return(gg)
+}
+
 ui <- navbarPage(title = "Citibank",
                  tabPanel("Top rules",
                           sidebarLayout(
@@ -259,12 +282,16 @@ ui <- navbarPage(title = "Citibank",
                                   tabsetPanel(type = "tabs",
                                               tabPanel("Map", 
                                                        br(),
-                                                       plotOutput('map_location'),
+                                                       plotOutput('map_location', height='800px'),
                                                        br(),
                                                        br(),
                                                        span('Here we drill down into the top 5 categories with spending where Fashion & Shoes highly attracts the Chinese tourists. An international campaign targeted the Asian market can be done as there is an appetite from Japan & China’s tourists into the fashion industry. Also, US’s tourists show powerful appetite for Bars & Restaurants category, this can be a sign for having US’s themed restaurants & bars can be furthered invested in to attract more US tourists.'),
                                                        br(),
                                                        plotOutput('plot_category_country')
+                                              ),
+                                              tabPanel("Flow",
+                                                       br(),
+                                                       plotOutput('plot_sankey', height='1000px')
                                               ),
                                               tabPanel("Distribution", 
                                                        br(),
@@ -337,6 +364,7 @@ server <- function(input, output) {
         output$plot_distribution_hourofday <- renderPlot(plot_distribution_hourofday(df_mod, input$class))
         output$plot_heatmap_hourofday <- renderPlot(plot_heatmap_hourofday(df_mod, input$class))
         output$plot_category_country <- renderPlot(plot_category_country(df_mod, input$class, group2))
+        output$plot_sankey <- renderPlot(plot_sankey(df_mod, input$class))
         
     })
     
