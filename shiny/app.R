@@ -231,12 +231,30 @@ plot_heatmap_hourofday <- function(df, class) {
     return(gg)
 }
 
-plot_category_country <- function(df, class, group) {
+counter_convert <- function(df, counter) {
+    if (counter == 'Total sum of the operations') {
+        df <- rename(df, `counter_`= sum_)
+    } else if (counter == 'Mean of the operations') {
+        df <- rename(df, `counter_`= mean_)
+    } else if (counter == 'Number of operations') {
+        df <- rename(df, `counter_`= n_)
+    } else {
+        df
+    }
+    
+    return(df)
+}
+
+plot_category_country <- function(df, class, group, counter) {
     df_grouped <- df %>% 
         group_by(top_class, top_group) %>% 
-        summarise(sum_=sum(amount)/1e3)
+        summarise(sum_=sum(amount)/1e3,
+                  mean_=mean(amount),
+                  n_=n())
     
-    gg <- ggplot(df_grouped, aes(x = top_group, y = sum_, fill = top_class, label = paste(top_class, "\n", round(sum_, 0)))) +  # Create stacked bar chart
+    df_grouped <- counter_convert(df_grouped, counter)
+    
+    gg <- ggplot(df_grouped, aes(x = top_group, y = counter_, fill = top_class, label = paste(top_class, "\n", round(counter_, 0)))) +  # Create stacked bar chart
         geom_bar(stat = "identity", aes(alpha=0.8)) +
         geom_text_repel(size = 3, position = position_stack(vjust = 0.5)) + #, angle = 45
          theme(axis.text.x=element_text(angle=90, hjust=1)) +
@@ -244,28 +262,30 @@ plot_category_country <- function(df, class, group) {
         labs(title = paste("Spendings per", group, 'and', class),
              subtitle = "Total expenditure",
              x = group,
-             y = "Amount in thousands") +
+             y = counter) +
         scale_fill_viridis_d(name=class) +
         scale_alpha_continuous(guide=FALSE)
     
     return(gg)  
 }
 
-plot_sankey <- function(df, class) {
+plot_sankey <- function(df, class, counter) {
     # https://rkabacoff.github.io/datavis/Other.html
     
     df_grouped <- df %>% 
         group_by(top_class, daytime) %>% 
-        summarise(amount_=sum(amount))
+        summarise(sum_=sum(amount),
+                  mean_=mean(amount),
+                  n_=n())
     
-    dim(df_grouped)
+    df_grouped <- counter_convert(df_grouped, counter)
     
-    gg <- ggplot(df_grouped, aes(axis1 = top_class, axis3 = daytime, y = amount_)) +
+    gg <- ggplot(df_grouped, aes(axis1 = top_class, axis3 = daytime, y = counter_)) +
         geom_alluvium(aes(fill=top_class)) +
         geom_stratum() +
         geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
         scale_x_discrete(limits = c(class, 'Daytime'), expand = c(.1, .1)) +
-        labs(title = "Flow and allocation", subtitle = paste0('Stratified by ', class, ' and daytime'), y = "Proportional to total amount") +
+        labs(title = "Flow and allocation", subtitle = paste0('Stratified by ', class, ' and daytime'), y = paste("Proportional to ", tolower(counter))) +
         theme_minimal() +
         theme(legend.position = "none",
               axis.text.y=element_blank()) +
@@ -298,13 +318,29 @@ ui <- navbarPage(title = "Citibank",
                                                        plotOutput('map_location', height='800px'),
                                                        br(),
                                                        br(),
+                                                       selectInput('counter', 'Counter', choices=c('Total sum of the operations', 'Mean of the operations', 'Number of operations'), selected = 'Total sum of the operations'),
+                                                       span("When 'Category' is selected and 'Number of operations'"),
+                                                       br(),
+                                                       span("Top 5 countries in terms of number of transactions are: US, FR, GB, IT and BR."),
+                                                       br(),
+                                                       span("Top 5 countries in terms of total sales amount are: US, GB, CN, FR and JP."),
+                                                       br(),
+                                                       span("Top 5 countries in terms of average ticket are: VN, TH, SA, ID and AO."),
+                                                       br(),
+                                                       br(),
+                                                       span("Notice the different top countries based on the 3 KPIs (Total Count, Total Value, Average Ticket)."),
+                                                       br(),
+                                                       span("If we consider those countries with the highest average ticket, they just have relatively fewer number of transactions (less than 50). But when they transact, they spend more compared to the other countries."),
+                                                       br(),
+                                                       br(),
                                                        span("When 'Country' is selected, we can drill down into the top 5 categories with spending where Fashion & Shoes highly attracts the US, GB and Chinese buyers. An international campaign targeted the Asian market can be done as there is an appetite from Japan & China’s tourists into the fashion industry. Also, US’s tourists show powerful appetite for Bars & Restaurants category, this can be a sign for having US’s themed restaurants & bars can be furthered invested in to attract more US tourists."),
                                                        br(),
                                                        plotOutput('plot_category_country')
                                               ),
                                               tabPanel("Flow",
                                                        br(),
-                                                       span("When 'Category' is selected, we can confirm most of the Fashion & Shoes purchase happens in the Afternon and Evening. Also some of the operations happens ad mid morning. Lunch and after office time for workers is a great target for ad campains in Social Media and Mall centers."),
+                                                       selectInput('counter2', 'Counter', choices=c('Total sum of the operations', 'Mean of the operations', 'Number of operations'), selected = 'Total sum of the operations'),
+                                                       span("When 'Category' is selected and 'Sum', we can confirm most of the Fashion & Shoes purchase happens in the Afternon and Evening. Also some of the operations happens ad mid morning. Lunch and after office time for workers is a great target for ad campains in Social Media and Mall centers."),
                                                        br(),
                                                        br(),
                                                        plotOutput('plot_sankey', height='1000px')
@@ -387,8 +423,8 @@ server <- function(input, output) {
         output$map_location <- renderPlot(map_location(df, input$class, input$top))
         output$plot_distribution_hourofday <- renderPlot(plot_distribution_hourofday(df_mod, input$class))
         output$plot_heatmap_hourofday <- renderPlot(plot_heatmap_hourofday(df_mod, input$class))
-        output$plot_category_country <- renderPlot(plot_category_country(df_mod, input$class, group2))
-        output$plot_sankey <- renderPlot(plot_sankey(df_mod, input$class))
+        output$plot_category_country <- renderPlot(plot_category_country(df_mod, input$class, group2, input$counter))
+        output$plot_sankey <- renderPlot(plot_sankey(df_mod, input$class, input$counter2))
         
     })
     

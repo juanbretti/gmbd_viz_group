@@ -5,8 +5,8 @@ account: juanbretti
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3362476
-bundleId: 3952214
+bundleId: 3975131
 url: https://juanbretti.shinyapps.io/gmbd_viz/
-when: 1607296011.57965
+when: 1607691261.02484
 asMultiple: FALSE
 asStatic: FALSE
