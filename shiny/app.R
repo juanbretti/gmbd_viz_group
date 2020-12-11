@@ -30,19 +30,23 @@ df_mod_class_top <- function(df, class, group, top, other) {
     
     df_top_class <- df_mod %>% 
         group_by(`class`) %>% 
-        summarise(Total=sum(`amount`)) %>% 
+        summarise(Total=sum(`amount`),
+                  Mean=mean(`amount`),
+                  N=n()) %>% 
         top_n(top, Total) %>%
         arrange(desc(Total))
     
     df_top_group <- df_mod %>% 
         group_by(`group`) %>% 
-        summarise(Total=sum(`amount`)) %>% 
+        summarise(Total=sum(`amount`),
+                  Mean=mean(`amount`),
+                  N=n()) %>% 
         top_n(top, Total) %>%
         arrange(desc(Total))
     
     daytime_sorted <- df_mod %>% 
         group_by(`daytime`) %>% 
-        summarise(hour=mean(`hour`)) %>% 
+        summarise(hour=sum(`hour`)) %>% 
         arrange((hour)) %>% 
         .[['daytime']]
 
@@ -65,27 +69,29 @@ df_mod_class_top <- function(df, class, group, top, other) {
 }
 
 plot_distribution1 <- function(df, class) {
+    
     mu <- df %>% 
         group_by(top_class) %>% 
         summarise(grp.mean=mean(amount))
     
-    plot_distribution1 <- ggplot(df, aes(x=amount, color=top_class, fill=top_class)) +
-        geom_density(alpha=0.1)+
-        geom_vline(data=mu, aes(xintercept=grp.mean, color=top_class), linetype="dashed")+
-        labs(title="Amount", 
-             subtitle=paste('Amount distribution per', class), 
-             x="Amount in log scale", 
-             y = "Density", 
-             fill=class, color=class)+
-        scale_x_log10() +
-        scale_fill_viridis_d(name=class) +
-        theme(axis.text.y=element_blank())
+    # plot_distribution1 <- ggplot(df, aes(x=amount, color=top_class, fill=top_class)) +
+    #     geom_density(alpha=0.1)+
+    #     geom_vline(data=mu, aes(xintercept=grp.mean, color=top_class), linetype="dashed")+
+    #     labs(title="Amount", 
+    #          subtitle=paste('Amount distribution per', class), 
+    #          x="Amount in log scale", 
+    #          y = "Density", 
+    #          fill=class, color=class)+
+    #     scale_x_log10() +
+    #     scale_fill_viridis_d(name=class) +
+    #     theme(axis.text.y=element_blank())
     
     plot_boxplot1 <- ggplot(df, aes(x=amount, y=top_class, fill=top_class)) +
         geom_boxplot(alpha=0.1) +
+        stat_summary(fun.x=mean, geom="point", shape=20, size=4, color="black", fill="black", alpha=0.5) +
         scale_x_log10() +
         theme(legend.position = "none") +
-        scale_fill_viridis_d() +
+        scale_fill_viridis_d(name=class) +
         labs(title="Box-plot of the amount", 
              subtitle=paste('Amount distribution per', class, 'using a box-plot'), 
              x="Amount in log scale", 
@@ -137,8 +143,10 @@ plot_distribution_country_category <- function(df, class, group) {
              y = 'Density',
              x = "Amount per operation") +
         coord_cartesian(xlim = c(0, 200), ylim = c(0, 0.02)) +
-        theme(legend.position = "none",
-              axis.text.y=element_blank())
+        theme(axis.text.y=element_blank()) +
+        scale_fill_viridis_d(name=class) +
+        scale_fill_discrete(name=class) +
+        scale_color_discrete(name=class)
     
     return(gg)
 }
@@ -267,45 +275,57 @@ plot_sankey <- function(df, class) {
 }
 
 ui <- navbarPage(title = "Citibank",
-                 tabPanel("Top rules",
+                 tabPanel("Top entities",
                           sidebarLayout(
                               sidebarPanel(
                                   div(img(src="logo.png",height=194/2,width=300/2), style="text-align: center;"),
                                   br(),
+                                  span("Select the top countries or categories for sorting criteria."),
+                                  br(),
+                                  br(),
                                   selectInput('class', 'Class', choices=c('Country', 'Category'), selected = 'Country'),
                                   sliderInput('top', 'Top', min = 1, max = 50, value = 5),
                                   checkboxGroupInput('other', "Show 'Other'", choices = c('Show'), selected=c('Show')),
-                                  br(),
-                                  span("Select the top rules based on the proposed sorting criteria. It's recommended the 'category'.")
                               ),
                               mainPanel(
                                   tabsetPanel(type = "tabs",
                                               tabPanel("Map", 
                                                        br(),
+                                                       span("When 'Country' is selected for class grouping, we can confirm the information covers the whole world."),
+                                                       br(),
+                                                       span("When 'Category' is selected, also can confirm the classified information covers almost most of the countries"),
+                                                       br(),
                                                        plotOutput('map_location', height='800px'),
                                                        br(),
                                                        br(),
-                                                       span('Here we drill down into the top 5 categories with spending where Fashion & Shoes highly attracts the Chinese tourists. An international campaign targeted the Asian market can be done as there is an appetite from Japan & China’s tourists into the fashion industry. Also, US’s tourists show powerful appetite for Bars & Restaurants category, this can be a sign for having US’s themed restaurants & bars can be furthered invested in to attract more US tourists.'),
+                                                       span("When 'Country' is selected, we can drill down into the top 5 categories with spending where Fashion & Shoes highly attracts the US, GB and Chinese buyers. An international campaign targeted the Asian market can be done as there is an appetite from Japan & China’s tourists into the fashion industry. Also, US’s tourists show powerful appetite for Bars & Restaurants category, this can be a sign for having US’s themed restaurants & bars can be furthered invested in to attract more US tourists."),
                                                        br(),
                                                        plotOutput('plot_category_country')
                                               ),
                                               tabPanel("Flow",
                                                        br(),
+                                                       span("When 'Category' is selected, we can confirm most of the Fashion & Shoes purchase happens in the Afternon and Evening. Also some of the operations happens ad mid morning. Lunch and after office time for workers is a great target for ad campains in Social Media and Mall centers."),
+                                                       br(),
+                                                       br(),
                                                        plotOutput('plot_sankey', height='1000px')
                                               ),
                                               tabPanel("Distribution", 
                                                        br(),
-                                                       plotOutput('plot_distribution1_1'),
+                                                       span("When 'Country' is selected, the following two plots shows in a logarithmic scale that from the highest expenders (total sum of amount), the highest mean per transaction came from China."),
                                                        br(),
+                                                       span("When 'Category' is selected, it can be read that from the highest cumulative amount, the highest mean expese is the 'Accomodation'."),
                                                        br(),
-                                                       span('This ridgelines chart explains the spending distribution by category. The top 3 categories with high variation is Fashion & Shoes, Accommodation, Bars & Restaurants. These 3 categories account for 83% of all spending. Therefore, the focus of promoting places for tourists should be allocated for these categories.'),
-                                                       br(),
+                                                       span("These 'Distribution' plots could help the marketing team to define an ad targeted campain."),
                                                        br(),
                                                        plotOutput('plot_distribution1_2'),
                                                        br(),
                                                        br(),
+                                                       span("When 'Category' is selected. This ridgelines chart explains the spending distribution by category. The top 3 categories with high variation is Fashion & Shoes, Accommodation, Bars & Restaurants. These 3 categories account for 83% of all spending. Therefore, the focus of promoting places for tourists should be allocated for these categories."),
+                                                       br(),
                                                        plotOutput('plot_distribution2'),
                                                        br(),
+                                                       br(),
+                                                       span("When 'Category' is selected. Is noticed the huge spike in low transactions in Japan in Transportations."),
                                                        br(),
                                                        plotOutput('plot_distribution_country_category')
                                               ),
@@ -316,7 +336,7 @@ ui <- navbarPage(title = "Citibank",
                                                        plotOutput('plot_distribution_hourofday'),
                                                        br(),
                                                        br(),
-                                                       span('This visualization is a heatmap that explains the purchase behavior of top 5 tourists countries by the hour of the day. Here we can see some variation based on the purchase category, for example the peak hours of the category Fashion & Shoes begins afternoon (16) and starts to decline after 18. Our recommendation is to activate marketing campaigns during the off-hours in specific categories (i.e. Bars & Restaurants) to encourage tourists visiting these shops with tempting discounts or offers.'),
+                                                       span("When 'Category' is selected. This visualization is a heatmap that explains the purchase behavior of top 5 tourists countries by the hour of the day. Here we can see some variation based on the purchase category, for example the peak hours of the category Fashion & Shoes begins afternoon (16) and starts to decline after 18. Our recommendation is to activate marketing campaigns during the off-hours in specific categories (i.e. Bars & Restaurants) to encourage tourists visiting these shops with tempting discounts or offers."),
                                                        br(),
                                                        plotOutput('plot_heatmap_hourofday')
                                               )
@@ -329,10 +349,14 @@ ui <- navbarPage(title = "Citibank",
                               sidebarPanel(
                                   div(img(src="logo.png",height=194/2,width=300/2), style="text-align: center;"),
                                   br(),
-                                  span("General descriptive information of the transactions and rules")
+                                  span("General descriptive information of the transactions")
                               ),
                               mainPanel(
                                   h3("Dataset summary"),
+                                  br(),
+                                  span("Simple statistics of the dataset"),
+                                  br(),
+                                  br(),
                                   verbatimTextOutput('skim')
                               )
                           )
