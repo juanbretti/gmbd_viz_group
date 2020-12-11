@@ -151,7 +151,7 @@ plot_distribution_country_category <- function(df, class, group) {
     return(gg)
 }
 
-map_location <- function(df, class, top) {
+map_location <- function(df, class, top, counter) {
     # https://rpubs.com/Lluis_Ramon/Prestantacion_ggplot2_ggmap
     # https://www.datanovia.com/en/blog/how-to-create-a-map-using-ggplot2/
     data(wrld_simpl)
@@ -159,9 +159,12 @@ map_location <- function(df, class, top) {
     
     df_grouped <- df %>% 
         group_by(`customer_country`, `category`) %>% 
-        summarise(n_=n(),
-                  amount_=mean(amount)) %>% 
+        summarise(sum_=sum(amount)/1e3,
+                  mean_=mean(amount),
+                  n_=n()) %>% 
         mutate(row_=row_number())
+    
+    df_grouped <- counter_convert(df_grouped, counter)
     
     df_top_country <- df %>% 
         group_by(`customer_country`) %>% 
@@ -176,12 +179,11 @@ map_location <- function(df, class, top) {
         filter(id %in% df_top_country)
     
     gg <- ggplot(df_grouped) +
-        geom_map(aes(map_id = customer_country, fill = amount_), map = world_ggmap) +
+        geom_map(aes(map_id = customer_country, fill = counter_), map = world_ggmap) +
         expand_limits(x = world_ggmap$long, y = world_ggmap$lat) +
         geom_text(aes(x=long, y=lat, label = id), data=world_ggmap_mean, size = 3, hjust = 0.5, color='red')+
-        scale_fill_viridis_c(name='Mean amount')+
+        scale_fill_viridis_c(name=counter)+
         theme_void()
-        # theme(legend.position = "none")
     
     if (class=='Category') {
         gg <- gg + facet_wrap(vars(category))
@@ -311,6 +313,8 @@ ui <- navbarPage(title = "Citibank",
                                   tabsetPanel(type = "tabs",
                                               tabPanel("Map", 
                                                        br(),
+                                                       selectInput('counter_map', 'Counter', choices=c('Total sum of the operations', 'Mean of the operations', 'Number of operations'), selected = 'Total sum of the operations'),
+                                                       br(),
                                                        span("When 'Country' is selected for class grouping, we can confirm the information covers the whole world."),
                                                        br(),
                                                        span("When 'Category' is selected, also can confirm the classified information covers almost most of the countries"),
@@ -318,7 +322,6 @@ ui <- navbarPage(title = "Citibank",
                                                        plotOutput('map_location', height='800px'),
                                                        br(),
                                                        br(),
-                                                       selectInput('counter', 'Counter', choices=c('Total sum of the operations', 'Mean of the operations', 'Number of operations'), selected = 'Total sum of the operations'),
                                                        span("When 'Category' is selected and 'Number of operations'"),
                                                        br(),
                                                        span("Top 5 countries in terms of number of transactions are: US, FR, GB, IT and BR."),
@@ -339,7 +342,7 @@ ui <- navbarPage(title = "Citibank",
                                               ),
                                               tabPanel("Flow",
                                                        br(),
-                                                       selectInput('counter2', 'Counter', choices=c('Total sum of the operations', 'Mean of the operations', 'Number of operations'), selected = 'Total sum of the operations'),
+                                                       selectInput('counter_flow', 'Counter', choices=c('Total sum of the operations', 'Mean of the operations', 'Number of operations'), selected = 'Total sum of the operations'),
                                                        span("When 'Category' is selected and 'Sum', we can confirm most of the Fashion & Shoes purchase happens in the Afternon and Evening. Also some of the operations happens ad mid morning. Lunch and after office time for workers is a great target for ad campains in Social Media and Mall centers."),
                                                        br(),
                                                        br(),
@@ -405,7 +408,7 @@ server <- function(input, output) {
     output$skim <- renderPrint(text_skim)
     
     # Distribution
-    observeEvent(c(input$class, input$top, input$other), ignoreNULL = FALSE, ignoreInit = FALSE, {
+    observeEvent(c(input$class, input$top, input$other, input$counter_map, input$counter_flow), ignoreNULL = FALSE, ignoreInit = FALSE, {
         # Selection
         class <- if(input$class=='Category') 'category' else 'customer_country'
         group <- if(input$class=='Category') 'customer_country' else 'category'
@@ -420,11 +423,11 @@ server <- function(input, output) {
 
         output$plot_distribution2 <- renderPlot(plot_distribution2(df_mod, input$class))
         output$plot_distribution_country_category <- renderPlot(plot_distribution_country_category(df_mod, input$class, group2))
-        output$map_location <- renderPlot(map_location(df, input$class, input$top))
+        output$map_location <- renderPlot(map_location(df, input$class, input$top, input$counter_map))
         output$plot_distribution_hourofday <- renderPlot(plot_distribution_hourofday(df_mod, input$class))
         output$plot_heatmap_hourofday <- renderPlot(plot_heatmap_hourofday(df_mod, input$class))
-        output$plot_category_country <- renderPlot(plot_category_country(df_mod, input$class, group2, input$counter))
-        output$plot_sankey <- renderPlot(plot_sankey(df_mod, input$class, input$counter2))
+        output$plot_category_country <- renderPlot(plot_category_country(df_mod, input$class, group2, input$counter_map))
+        output$plot_sankey <- renderPlot(plot_sankey(df_mod, input$class, input$counter_flow))
         
     })
     
