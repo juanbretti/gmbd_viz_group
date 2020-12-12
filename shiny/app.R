@@ -296,6 +296,32 @@ plot_sankey <- function(df, class, counter) {
     return(gg)
 }
 
+plot_growth <- function(df) {
+    # https://www.analyzemath.com/parabola/three_points_para_calc.html
+    
+    f <-  function(x) -0.03667*x^2+4.833*x+500.0
+    
+    df_grouped <- df %>% 
+        group_by(customer_country) %>% 
+        summarise(AverageAmount=mean(amount),
+                  TransactionsCount=n()) %>% 
+        mutate(color_=TransactionsCount>=f(AverageAmount),
+               label_=ifelse(color_, customer_country, ''))
+    
+    gg <- ggplot() +
+        geom_rect(aes(xmin = 50, xmax = 150, ymin = 1000, ymax = 1800), alpha=0.2, fill="red") +
+        annotate("text", x = 200, y = 1500, label = "Spend more", color = 'red') +
+        geom_rect(aes(xmin = 250, xmax = 500, ymin = 0, ymax = 200), alpha=0.2, fill="green") +
+        annotate("text", x = 400, y = 300, label = "More transactions", color = 'dark green') +
+        geom_point(data=df_grouped, aes(x=AverageAmount, y=TransactionsCount, color=color_)) +
+        geom_text(data=df_grouped, aes(x=AverageAmount, y=TransactionsCount, label=label_), nudge_y = 100) +
+        geom_function(data=df_grouped, aes(x=AverageAmount), fun = f, xlim=c(0, 200)) +
+        theme(legend.position = "none") +
+        labs(title="Growth areas",x="Average amount", y = "Transactions count")
+    
+    return(gg)
+}
+
 ui <- navbarPage(title = "Citibank",
                  tabPanel("Top entities",
                           sidebarLayout(
@@ -387,6 +413,28 @@ ui <- navbarPage(title = "Citibank",
                               )
                           )
                  ),
+                 tabPanel("Growth",
+                          sidebarLayout(
+                              sidebarPanel(
+                                  div(img(src="logo.png",height=194/2,width=300/2), style="text-align: center;"),
+                                  br(),
+                                  span("Options of growth.")
+                              ),
+                              mainPanel(
+                                  span("For the 'Growth Frontier Segment' - the segment to be nurtured and where the focus of the marketing effort should be devoted to as this is the largest segment of the customers and the most profitable one. Campaigns should include increasing both the frequency of transactions and the basket size (cross sell upsell program), and making them come back regularly (loyalty program)."),
+                                  br(),
+                                  br(),
+                                  span("For the 'Spend More' segment - action plan could be coming up with cross-sell upsell initiative such as promotional tie-ups with different stores to encourage the tourists to augment their shopping basket."),
+                                  br(),
+                                  br(),
+                                  span("For the 'More Transaction' segment - awareness campaign could be done. The low number of transactions could be a function of low number of tourists coming from those countries."),
+                                  br(),
+                                  br(),
+                                  br(),
+                                  plotOutput('plot_growth')
+                              )
+                          )
+                 ),
                  tabPanel("Descriptive study",
                           sidebarLayout(
                               sidebarPanel(
@@ -433,6 +481,7 @@ server <- function(input, output) {
         output$plot_category_country <- renderPlot(plot_category_country(df_mod, input$class, group2, input$counter_map))
         output$plot_sankey <- renderPlot(plot_sankey(df_mod, input$class, input$counter_flow))
         
+        output$plot_growth <- renderPlot(plot_growth(df))
     })
     
 }
