@@ -313,6 +313,7 @@ plot_growth <- function(df) {
         annotate("text", x = 200, y = 1500, label = "Spend more", color = 'red') +
         geom_rect(aes(xmin = 250, xmax = 500, ymin = 0, ymax = 200), alpha=0.2, fill="green") +
         annotate("text", x = 400, y = 300, label = "More transactions", color = 'dark green') +
+        annotate("text", x = 50, y = 500, label = "Growth Frontier", color = 'black') +
         geom_point(data=df_grouped, aes(x=AverageAmount, y=TransactionsCount, color=color_)) +
         geom_text(data=df_grouped, aes(x=AverageAmount, y=TransactionsCount, label=label_), nudge_y = 100) +
         geom_function(data=df_grouped, aes(x=AverageAmount), fun = f, xlim=c(0, 200)) +
